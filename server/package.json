@@ -13,7 +13,9 @@
     "db:push": "prisma db push",
     "db:seed": "ts-node --transpile-only src/seed.ts",
     "auto-fill-images": "ts-node --transpile-only scripts/auto-fill-images.ts",
-    "auto-fill-images:execute": "ts-node --transpile-only scripts/auto-fill-images.ts --execute"
+    "auto-fill-images:execute": "ts-node --transpile-only scripts/auto-fill-images.ts --execute",
+    "seed:a-propos": "node scripts/seed-a-propos-content.mjs",
+    "auto-fill-a-propos": "ts-node --transpile-only scripts/auto-fill-a-propos-images.ts --execute"
   },
   "prisma": {
     "seed": "ts-node --transpile-only src/seed.ts"

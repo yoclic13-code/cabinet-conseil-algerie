@@ -52,11 +52,14 @@ model Page {
 /// Types de section rendus dynamiquement côté site public
 enum SectionType {
   hero
+  page_hero          @map("page-hero")
   texte
   image_texte        @map("image-texte")
   grille_cartes      @map("grille-cartes")
   logos_clients      @map("logos-clients")
   stats
+  equipe
+  certifications
   cta
   actualites
   zones_intervention @map("zones-intervention")
