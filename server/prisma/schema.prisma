@@ -1,0 +1,310 @@
+// =============================================================================
+// Cabinet Conseil Algérie — Schéma Prisma (MySQL / o2switch)
+// Phase 2 — Modèle de données complet
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// Auth
+// -----------------------------------------------------------------------------
+
+enum UserRole {
+  superadmin
+  admin
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  role         UserRole @default(admin)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+// -----------------------------------------------------------------------------
+// Pages & sections (contenu CMS dynamique)
+// -----------------------------------------------------------------------------
+
+model Page {
+  id        String    @id @default(cuid())
+  slug      String    @unique @db.VarChar(120)
+  ordre     Int       @default(0)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  sections  Section[]
+  seoMeta   SeoMeta?
+
+  @@index([ordre])
+  @@map("pages")
+}
+
+/// Types de section rendus dynamiquement côté site public
+enum SectionType {
+  hero
+  texte
+  image_texte        @map("image-texte")
+  grille_cartes      @map("grille-cartes")
+  logos_clients      @map("logos-clients")
+  stats
+  cta
+  actualites
+  zones_intervention @map("zones-intervention")
+  contact
+}
+
+model Section {
+  id         String      @id @default(cuid())
+  pageId     String      @map("page_id")
+  type       SectionType
+  ordre      Int         @default(0)
+  visible    Boolean     @default(true)
+  /// Contenu localisé FR (structure JSON selon le type de section)
+  contenuFR  Json        @map("contenu_fr")
+  /// Contenu localisé EN
+  contenuEN  Json        @map("contenu_en")
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId, ordre])
+  @@map("sections")
+}
+
+// -----------------------------------------------------------------------------
+// Médias
+// -----------------------------------------------------------------------------
+
+model MediaAsset {
+  id         String   @id @default(cuid())
+  url        String   @db.VarChar(500)
+  altFR      String?  @map("alt_fr") @db.VarChar(255)
+  altEN      String?  @map("alt_en") @db.VarChar(255)
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  @@map("media_assets")
+}
+
+// -----------------------------------------------------------------------------
+// Blog / Actualités
+// -----------------------------------------------------------------------------
+
+enum ArticleStatus {
+  brouillon
+  publie
+  programme
+}
+
+model Article {
+  id               String        @id @default(cuid())
+  titreFR          String        @map("titre_fr") @db.VarChar(255)
+  titreEN          String        @map("titre_en") @db.VarChar(255)
+  slug             String        @unique @db.VarChar(180)
+  extraitFR        String        @map("extrait_fr") @db.Text
+  extraitEN        String        @map("extrait_en") @db.Text
+  contenuFR        Json          @map("contenu_fr") /// JSON TipTap / HTML riche
+  contenuEN        Json          @map("contenu_en")
+  imageCouverture  String?       @map("image_couverture") @db.VarChar(500)
+  categorie        String        @db.VarChar(100)
+  /// Tags stockés en JSON array de strings
+  tags             Json          @default("[]")
+  auteur           String        @db.VarChar(120)
+  datePublication  DateTime?     @map("date_publication")
+  statut           ArticleStatus @default(brouillon)
+  /// Temps de lecture estimé en minutes (calculé à l'enregistrement)
+  tempsLecture     Int           @default(1) @map("temps_lecture")
+  /// Meta SEO article (optionnel, sinon fallback extrait)
+  seoTitleFR       String?       @map("seo_title_fr") @db.VarChar(70)
+  seoTitleEN       String?       @map("seo_title_en") @db.VarChar(70)
+  seoDescriptionFR String?       @map("seo_description_fr") @db.VarChar(160)
+  seoDescriptionEN String?       @map("seo_description_en") @db.VarChar(160)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  @@index([statut, datePublication])
+  @@index([categorie])
+  @@map("articles")
+}
+
+// -----------------------------------------------------------------------------
+// Événements
+// -----------------------------------------------------------------------------
+
+enum EvenementStatut {
+  a_venir
+  passe
+  annule
+}
+
+model Evenement {
+  id              String          @id @default(cuid())
+  titreFR         String          @map("titre_fr") @db.VarChar(255)
+  titreEN         String          @map("titre_en") @db.VarChar(255)
+  descriptionFR   String          @map("description_fr") @db.Text
+  descriptionEN   String          @map("description_en") @db.Text
+  /// Compte-rendu éditorial pour les événements passés (optionnel)
+  compteRenduFR   String?         @map("compte_rendu_fr") @db.Text
+  compteRenduEN   String?         @map("compte_rendu_en") @db.Text
+  image           String?         @db.VarChar(500)
+  dateDebut       DateTime        @map("date_debut")
+  dateFin         DateTime?       @map("date_fin")
+  lieu            String          @db.VarChar(255)
+  lienInscription String?         @map("lien_inscription") @db.VarChar(500)
+  /// Statut métier ; peut être recalculé selon dateDebut/dateFin (sauf annule)
+  statut          EvenementStatut @default(a_venir)
+  slug            String          @unique @db.VarChar(180)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  @@index([statut, dateDebut])
+  @@map("evenements")
+}
+
+// -----------------------------------------------------------------------------
+// Secteurs, zones, références clients
+// -----------------------------------------------------------------------------
+
+model SecteurActivite {
+  id        String   @id @default(cuid())
+  nomFR     String   @map("nom_fr") @db.VarChar(150)
+  nomEN     String   @map("nom_en") @db.VarChar(150)
+  /// Identifiant d'icône ou URL média
+  icone     String?  @db.VarChar(255)
+  descriptionFR String? @map("description_fr") @db.Text
+  descriptionEN String? @map("description_en") @db.Text
+  ordre     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([ordre])
+  @@map("secteurs_activite")
+}
+
+model ZoneIntervention {
+  id              String   @id @default(cuid())
+  paysRegionFR    String   @map("pays_region_fr") @db.VarChar(150)
+  paysRegionEN    String   @map("pays_region_en") @db.VarChar(150)
+  descriptionFR   String   @map("description_fr") @db.VarChar(500)
+  descriptionEN   String   @map("description_en") @db.VarChar(500)
+  /// Niveau géographique pour la carte SVG : algerie | afrique | international
+  niveau          String   @default("algerie") @db.VarChar(40)
+  ordre           Int      @default(0)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([ordre])
+  @@map("zones_intervention")
+}
+
+model Reference {
+  id        String   @id @default(cuid())
+  nom       String   @db.VarChar(150)
+  logo      String   @db.VarChar(500)
+  url       String?  @db.VarChar(500)
+  ordre     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([ordre])
+  @@map("references")
+}
+
+// -----------------------------------------------------------------------------
+// Leads / formulaire ContactFlow
+// -----------------------------------------------------------------------------
+
+enum LeadStatus {
+  nouveau
+  traite
+}
+
+model ContactLead {
+  id          String     @id @default(cuid())
+  /// Étape 1 — type de besoin (Audit, Étude, Formation, etc.)
+  service     String     @db.VarChar(80)
+  /// Étape 2 — pays / zone
+  zone        String     @db.VarChar(120)
+  /// Étape 3 — secteur d'activité
+  secteur     String     @db.VarChar(150)
+  /// Étape 4 — description projet
+  description String     @db.Text
+  /// Étape 5 — coordonnées
+  nom         String     @db.VarChar(150)
+  societe     String?    @db.VarChar(150)
+  email       String     @db.VarChar(255)
+  telephone   String?    @db.VarChar(40)
+  statut      LeadStatus @default(nouveau)
+  /// Payload brut optionnel (traçabilité)
+  meta        Json?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  @@index([statut, createdAt])
+  @@index([email])
+  @@map("contact_leads")
+}
+
+// -----------------------------------------------------------------------------
+// SEO par page
+// -----------------------------------------------------------------------------
+
+model SeoMeta {
+  id            String  @id @default(cuid())
+  pageId        String  @unique @map("page_id")
+  titleFR       String  @map("title_fr") @db.VarChar(70)
+  titleEN       String  @map("title_en") @db.VarChar(70)
+  descriptionFR String  @map("description_fr") @db.VarChar(160)
+  descriptionEN String  @map("description_en") @db.VarChar(160)
+  ogImage       String? @map("og_image") @db.VarChar(500)
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@map("seo_meta")
+}
+
+// -----------------------------------------------------------------------------
+// Réglages globaux du cabinet (singleton logique — une seule ligne)
+// -----------------------------------------------------------------------------
+
+model Settings {
+  id String @id @default(cuid())
+
+  nomCabinet        String  @map("nom_cabinet") @db.VarChar(200)
+  logoUrl           String? @map("logo_url") @db.VarChar(500)
+  /// Baseline rayonnement : Algérie / Afrique / International
+  baselineFR        String  @map("baseline_fr") @db.VarChar(300)
+  baselineEN        String  @map("baseline_en") @db.VarChar(300)
+
+  // Coordonnées
+  adresse           String? @db.VarChar(300)
+  ville             String? @db.VarChar(120)
+  codePostal        String? @map("code_postal") @db.VarChar(20)
+  pays              String? @default("Algérie") @db.VarChar(100)
+  telephone         String? @db.VarChar(40)
+  email             String? @db.VarChar(255)
+
+  // Réseaux sociaux
+  linkedinUrl       String? @map("linkedin_url") @db.VarChar(300)
+  facebookUrl       String? @map("facebook_url") @db.VarChar(300)
+  twitterUrl        String? @map("twitter_url") @db.VarChar(300)
+  youtubeUrl        String? @map("youtube_url") @db.VarChar(300)
+
+  // SEO / tracking
+  googleSearchConsoleCode String? @map("google_search_console_code") @db.VarChar(120)
+  googleAnalyticsId       String? @map("google_analytics_id") @db.VarChar(40)
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
