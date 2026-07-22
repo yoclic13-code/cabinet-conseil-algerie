@@ -48,6 +48,21 @@ export default {
           mute: '#8A93A0',
           line: '#D5D0C8',
         },
+        /* Admin — palette productivité distincte du site public */
+        admin: {
+          bg: '#F4F5F7',
+          panel: '#FFFFFF',
+          border: '#E2E5EA',
+          ink: '#1A1D23',
+          mute: '#6B7280',
+          accent: '#2563EB',
+          accentHover: '#1D4ED8',
+          danger: '#DC2626',
+          success: '#059669',
+          warn: '#D97706',
+          sidebar: '#111827',
+          sidebarMuted: '#9CA3AF',
+        },
       },
       fontFamily: {
         display: ['Fraunces', 'Georgia', 'serif'],
