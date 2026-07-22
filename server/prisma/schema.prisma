@@ -87,12 +87,23 @@ model Section {
 // -----------------------------------------------------------------------------
 
 model MediaAsset {
-  id         String   @id @default(cuid())
-  url        String   @db.VarChar(500)
-  altFR      String?  @map("alt_fr") @db.VarChar(255)
-  altEN      String?  @map("alt_en") @db.VarChar(255)
-  uploadedAt DateTime @default(now()) @map("uploaded_at")
+  id              String   @id @default(cuid())
+  url             String   @db.VarChar(500)
+  altFR           String?  @map("alt_fr") @db.VarChar(255)
+  altEN           String?  @map("alt_en") @db.VarChar(255)
+  /// upload | freepik
+  source          String   @default("upload") @db.VarChar(20)
+  freepikId       Int?     @map("freepik_id")
+  licenseType     String?  @map("license_type") @db.VarChar(40)
+  licenseUrl      String?  @map("license_url") @db.VarChar(500)
+  authorName      String?  @map("author_name") @db.VarChar(150)
+  authorId        Int?     @map("author_id")
+  resourceTitle   String?  @map("resource_title") @db.VarChar(255)
+  resourcePageUrl String?  @map("resource_page_url") @db.VarChar(500)
+  uploadedAt      DateTime @default(now()) @map("uploaded_at")
 
+  @@index([source])
+  @@index([freepikId])
   @@map("media_assets")
 }
 

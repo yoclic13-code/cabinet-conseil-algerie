@@ -11,7 +11,9 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:push": "prisma db push",
-    "db:seed": "ts-node --transpile-only src/seed.ts"
+    "db:seed": "ts-node --transpile-only src/seed.ts",
+    "auto-fill-images": "ts-node --transpile-only scripts/auto-fill-images.ts",
+    "auto-fill-images:execute": "ts-node --transpile-only scripts/auto-fill-images.ts --execute"
   },
   "prisma": {
     "seed": "ts-node --transpile-only src/seed.ts"

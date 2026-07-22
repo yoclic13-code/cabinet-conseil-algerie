@@ -25,8 +25,11 @@ export async function ensureUploadDir() {
   await fs.mkdir(env.uploadDirAbsolute, { recursive: true });
 }
 
-/** Compresse et convertit en WebP, enregistre sur disque, retourne le chemin public */
-export async function processAndSaveImage(file: Express.Multer.File): Promise<{
+/** Compresse et convertit en WebP depuis un buffer (upload manuel ou Freepik) */
+export async function processAndSaveImageBuffer(
+  buffer: Buffer,
+  opts?: { sourceFilename?: string },
+): Promise<{
   filename: string;
   url: string;
   width: number;
@@ -34,10 +37,12 @@ export async function processAndSaveImage(file: Express.Multer.File): Promise<{
 }> {
   await ensureUploadDir();
 
-  const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.webp`;
+  const ext = opts?.sourceFilename?.match(/\.[a-z0-9]+$/i)?.[0]?.slice(1) ?? 'jpg';
+  const prefix = Date.now();
+  const filename = `${prefix}-${Math.random().toString(36).slice(2, 8)}.webp`;
   const absolutePath = path.join(env.uploadDirAbsolute, filename);
 
-  const image = sharp(file.buffer).rotate();
+  const image = sharp(buffer, { failOn: ext === 'svg' ? 'none' : 'warning' }).rotate();
   const meta = await image.metadata();
 
   await image
@@ -50,10 +55,22 @@ export async function processAndSaveImage(file: Express.Multer.File): Promise<{
     .webp({ quality: 82 })
     .toFile(absolutePath);
 
+  const outMeta = await sharp(absolutePath).metadata();
+
   return {
     filename,
     url: `/uploads/${filename}`,
-    width: meta.width ?? 0,
-    height: meta.height ?? 0,
+    width: outMeta.width ?? meta.width ?? 0,
+    height: outMeta.height ?? meta.height ?? 0,
   };
+}
+
+/** Compresse et convertit en WebP, enregistre sur disque, retourne le chemin public */
+export async function processAndSaveImage(file: Express.Multer.File): Promise<{
+  filename: string;
+  url: string;
+  width: number;
+  height: number;
+}> {
+  return processAndSaveImageBuffer(file.buffer, { sourceFilename: file.originalname });
 }

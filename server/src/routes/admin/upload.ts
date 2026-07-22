@@ -29,6 +29,7 @@ router.post('/', uploadMiddleware.single('file'), async (req, res, next) => {
         url: saved.url,
         altFR: meta.altFR ?? null,
         altEN: meta.altEN ?? null,
+        source: 'upload',
       },
     });
 

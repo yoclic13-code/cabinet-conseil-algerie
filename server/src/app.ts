@@ -21,6 +21,7 @@ import adminAuth from './routes/admin/auth';
 import adminPages from './routes/admin/pages';
 import adminSections from './routes/admin/sections';
 import adminUpload from './routes/admin/upload';
+import adminMedia from './routes/admin/media';
 import adminArticles from './routes/admin/articles';
 import adminEvenements from './routes/admin/evenements';
 import adminSecteurs from './routes/admin/secteurs';
@@ -82,6 +83,7 @@ export async function createApp() {
   admin.use('/pages', adminPages);
   admin.use('/sections', adminSections);
   admin.use('/upload', adminUpload);
+  admin.use('/media', adminMedia);
   admin.use('/articles', adminArticles);
   admin.use('/evenements', adminEvenements);
   admin.use('/secteurs', adminSecteurs);

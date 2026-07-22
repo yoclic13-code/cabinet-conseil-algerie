@@ -23,6 +23,7 @@ const envSchema = z.object({
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().optional(),
   SMTP_NOTIFY_TO: z.string().optional(),
+  FREEPIK_API_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -40,4 +41,5 @@ export const env = {
   uploadDirAbsolute: path.resolve(process.cwd(), data.UPLOAD_DIR),
   isDev: data.NODE_ENV === 'development',
   smtpConfigured: Boolean(data.SMTP_HOST && data.SMTP_USER && data.SMTP_PASS),
+  freepikConfigured: Boolean(data.FREEPIK_API_KEY && data.FREEPIK_API_KEY.length > 0),
 };
