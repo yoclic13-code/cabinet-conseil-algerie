@@ -1,32 +1,29 @@
 import 'dotenv/config';
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import cookieParser from 'cookie-parser';
+import { createApp } from './app';
+import { env } from './config/env';
+import { prisma } from './lib/prisma';
 
-const app = express();
-const PORT = Number(process.env.PORT) || 3001;
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+async function main() {
+  const app = await createApp();
 
-app.use(helmet());
-app.use(
-  cors({
-    origin: CLIENT_URL,
-    credentials: true,
-  }),
-);
-app.use(express.json({ limit: '2mb' }));
-app.use(cookieParser());
-
-app.get('/api/health', (_req, res) => {
-  res.json({
-    status: 'ok',
-    service: 'cabinet-conseil-api',
-    timestamp: new Date().toISOString(),
+  const server = app.listen(env.PORT, () => {
+    // eslint-disable-next-line no-console
+    console.log(`[server] API démarrée sur http://localhost:${env.PORT}`);
   });
-});
 
-app.listen(PORT, () => {
+  const shutdown = async () => {
+    server.close();
+    await prisma.$disconnect();
+    process.exit(0);
+  };
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+}
+
+main().catch(async (err) => {
   // eslint-disable-next-line no-console
-  console.log(`[server] API démarrée sur http://localhost:${PORT}`);
+  console.error('[server] Échec démarrage:', err);
+  await prisma.$disconnect();
+  process.exit(1);
 });
